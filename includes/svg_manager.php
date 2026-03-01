@@ -134,8 +134,8 @@ function validateSvg($svgContent) {
     $allowedTags = '<svg><path><circle><rect><ellipse><line><polyline><polygon><g><text><tspan><defs><linearGradient><radialGradient><stop><pattern><clipPath><mask><filter>';
     $svgContent = strip_tags($svgContent, $allowedTags);
     
-    // 检查是否包含危险属性
-    if (preg_match('/on\w+\s*=/i', $svgContent)) {
+    // 检查是否包含危险属性（确保on后面跟着字母，且前面是空白字符或标签开始）
+    if (preg_match('/(^|\s|>)on\w+\s*=/i', $svgContent)) {
         return false;
     }
     

@@ -55,6 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['icon_code'])) {
                 
                 foreach ($svgUrls as $base64Code) {
                     $base64Code = trim($base64Code);
+                    // 移除所有空白字符（包括换行符）
+                    $base64Code = preg_replace('/\s/', '', $base64Code);
                     if (empty($base64Code)) continue;
                     
                     $svgContent = base64_decode($base64Code);
@@ -111,6 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['icon_code'])) {
                 if (preg_match('/^data:image\/svg\+xml;base64,/', $iconCode)) {
                     // 移除数据URL前缀
                     $base64Code = preg_replace('/^data:image\/svg\+xml;base64,/', '', $iconCode);
+                    // 移除所有空白字符（包括换行符）
+                    $base64Code = preg_replace('/\s/', '', $base64Code);
                     // 验证base64格式
                     if (preg_match('#^[a-zA-Z0-9\+/=]+$#', $base64Code)) {
                         // 解码base64
@@ -121,9 +125,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['icon_code'])) {
                     }
                 } 
                 // 检查是否为纯base64编码
-                else if (strlen($iconCode) % 4 == 0 && preg_match('#^[a-zA-Z0-9\+/=]+$#', $iconCode)) {
+                else if (strlen(preg_replace('/\s/', '', $iconCode)) % 4 == 0 && preg_match('#^[a-zA-Z0-9\+/=]+$#', preg_replace('/\s/', '', $iconCode))) {
+                    // 移除所有空白字符（包括换行符）
+                    $base64Code = preg_replace('/\s/', '', $iconCode);
                     // 解码base64
-                    $svgContent = base64_decode($iconCode);
+                    $svgContent = base64_decode($base64Code);
                     if (!empty($svgContent)) {
                         $isValidInput = true;
                     }
