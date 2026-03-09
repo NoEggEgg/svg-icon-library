@@ -356,6 +356,12 @@ const SvgIconLibrary = {
             }
         }
         
+        // 触摸事件变量
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        
         // 使用事件委托处理点击事件 - 使用捕获阶段
         this.DOM.iconGrid.addEventListener('click', (event) => {
             const card = event.target.closest('.icon-card');
@@ -365,13 +371,34 @@ const SvgIconLibrary = {
             }
         }, true);
         
-        // 触摸事件，支持移动设备 - 使用捕获阶段
+        // 触摸开始事件
         this.DOM.iconGrid.addEventListener('touchstart', (event) => {
             const card = event.target.closest('.icon-card');
             if (card) {
-                event.preventDefault();
-                event.stopPropagation();
-                this.openPreviewModal(card);
+                // 记录触摸开始位置
+                touchStartX = event.touches[0].clientX;
+                touchStartY = event.touches[0].clientY;
+            }
+        }, true);
+        
+        // 触摸结束事件
+        this.DOM.iconGrid.addEventListener('touchend', (event) => {
+            const card = event.target.closest('.icon-card');
+            if (card) {
+                // 记录触摸结束位置
+                touchEndX = event.changedTouches[0].clientX;
+                touchEndY = event.changedTouches[0].clientY;
+                
+                // 计算触摸距离
+                const deltaX = Math.abs(touchEndX - touchStartX);
+                const deltaY = Math.abs(touchEndY - touchStartY);
+                
+                // 如果移动距离小于10px，视为点击
+                if (deltaX < 10 && deltaY < 10) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.openPreviewModal(card);
+                }
             }
         }, true);
         
