@@ -127,7 +127,7 @@ header p {
     gap: 20px;
     margin-bottom: 150px;
     padding: 20px;
-    max-width: 1200px;
+    max-width: 1600px;
     margin-left: auto;
     margin-right: auto;
 }
@@ -636,6 +636,15 @@ header p {
     .icon-grid {
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
         gap: 25px;
+    }
+}
+
+/* 响应式设计 - 超大屏幕设备 */
+@media (min-width: 1600px) {
+    .icon-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 30px;
+        max-width: 1800px;
     }
 }
 
