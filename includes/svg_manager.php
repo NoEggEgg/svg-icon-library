@@ -95,6 +95,9 @@ function readSvgIcons() {
         }
     }
     
+    // 反转图标数组，使最新添加的图标显示在最前面
+    $icons = array_reverse($icons);
+    
     // 写入缓存文件
     if (!empty($icons)) {
         if (file_put_contents($cacheFile, serialize($icons), LOCK_EX) === false) {
