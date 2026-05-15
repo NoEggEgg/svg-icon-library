@@ -1,506 +1,426 @@
 /**
- * SVG图标库JavaScript
- * 处理复制功能、模态框操作和通知
+ * SVG图标库JavaScript - 简化版
+ * 专注于debug模式的可靠实现
  */
 
-// 使用模块模式组织代码
-const SvgIconLibrary = {
-    // DOM元素缓存
-    DOM: {},
+(function() {
+    'use strict';
     
-    // 当前选中的图标数据
-    currentIconData: null,
-    
-    // 初始化函数
-    init: function() {
-        this.initDOM();
-        this.initEventListeners();
-        this.initBackToTop();
-        this.initIconClickEvents();
-    },
-    
-    // 初始化DOM元素
-    initDOM: function() {
-        this.DOM = {
-            modal: document.getElementById('modal'),
-            previewModal: document.getElementById('preview-modal'),
-            iconPreviewContent: document.getElementById('icon-preview-content'),
-            notification: document.getElementById('notification'),
-            backToTopButton: document.getElementById('back-to-top'),
-            iconCodeInput: document.getElementById('icon-code'),
-            iconGrid: document.getElementById('icon-grid')
-        };
+    // 命名空间
+    const SVG = {
+        // Debug模式状态
+        debugMode: false,
         
-        // 检查DOM元素是否存在
-        for (const key in this.DOM) {
-            if (this.DOM[key] === null) {
-                console.warn(`DOM元素 ${key} 不存在`);
-            }
-        }
-    },
-    
-    // 初始化事件监听器
-    initEventListeners: function() {
-        // 确保DOM元素存在
-        if (!this.DOM.modal || !this.DOM.previewModal) {
-            console.warn('Modal elements not found');
-            // 尝试重新获取
-            this.DOM.modal = document.getElementById('modal');
-            this.DOM.previewModal = document.getElementById('preview-modal');
-            if (!this.DOM.modal || !this.DOM.previewModal) {
-                return;
-            }
-        }
+        // DOM元素缓存
+        DOM: {},
         
-        // 点击外部关闭模态框 - 使用捕获阶段
-        document.addEventListener('click', (event) => {
-            if (event.target === this.DOM.modal) {
-                event.stopPropagation();
-                this.closeModal();
-            } else if (event.target === this.DOM.previewModal) {
-                event.stopPropagation();
-                this.closePreviewModal();
+        // 初始化
+        init: function() {
+            console.log('SVG库开始初始化');
+            
+            // 初始化DOM
+            this.DOM = {
+                debugToggle: document.getElementById('debug-toggle'),
+                themeToggle: document.getElementById('theme-toggle'),
+                iconGrid: document.getElementById('icon-grid'),
+                modal: document.getElementById('modal'),
+                previewModal: document.getElementById('preview-modal'),
+                notification: document.getElementById('notification'),
+                submitButton: document.querySelector('.submit-button'),
+                backToTop: document.getElementById('back-to-top')
+            };
+            
+            console.log('DOM元素:', this.DOM);
+            
+            // 从URL参数读取debug模式（优先级最高）
+            const urlParams = new URLSearchParams(window.location.search);
+            this.debugMode = urlParams.has('debug');
+            console.log('Debug模式状态:', this.debugMode);
+            
+            // 从localStorage读取主题
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                this.setTheme(savedTheme);
+            } else {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) {
+                    this.setTheme('dark');
+                }
             }
-        }, true);
+            
+            // 初始化UI
+            this.initDebugUI();
+            
+            // 更新删除按钮（必须在initDebugUI之后）
+            this.updateDeleteButtons();
+            
+            // 绑定事件
+            this.bindEvents();
+            
+            console.log('SVG库初始化完成');
+        },
         
-        // 触摸事件，支持移动设备 - 使用捕获阶段
-        document.addEventListener('touchstart', (event) => {
-            if (event.target === this.DOM.modal) {
-                event.preventDefault();
-                event.stopPropagation();
-                this.closeModal();
-            } else if (event.target === this.DOM.previewModal) {
-                event.preventDefault();
-                event.stopPropagation();
-                this.closePreviewModal();
+        // 初始化Debug UI
+        initDebugUI: function() {
+            // 更新debug按钮状态
+            if (this.DOM.debugToggle) {
+                if (this.debugMode) {
+                    this.DOM.debugToggle.classList.add('active');
+                    this.DOM.debugToggle.title = 'Debug模式已启用 - 点击禁用';
+                } else {
+                    this.DOM.debugToggle.classList.remove('active');
+                    this.DOM.debugToggle.title = 'Debug模式已禁用 - 点击启用';
+                }
             }
-        }, true);
+            
+            // 为图标卡片添加/移除debug模式class
+            const cards = document.querySelectorAll('.icon-card');
+            cards.forEach(card => {
+                if (this.debugMode) {
+                    card.classList.add('debug-mode');
+                } else {
+                    card.classList.remove('debug-mode');
+                }
+            });
+        },
         
-        // 键盘事件处理
-        document.addEventListener('keydown', (event) => {
+        // 绑定事件
+        bindEvents: function() {
+            const self = this;
+            
+            // Debug模式按钮
+            if (this.DOM.debugToggle) {
+                this.DOM.debugToggle.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Debug按钮被点击 - 退出debug模式');
+                    // 移除URL中的debug参数
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.delete('debug');
+                    const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+                    window.location.href = newUrl;
+                };
+                console.log('Debug按钮事件已绑定');
+            }
+            
+            // 主题切换按钮
+            if (this.DOM.themeToggle) {
+                this.DOM.themeToggle.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('主题按钮被点击');
+                    self.toggleTheme();
+                };
+            }
+            
+            // 添加按钮
+            if (this.DOM.submitButton) {
+                this.DOM.submitButton.onclick = function(e) {
+                    e.preventDefault();
+                    self.openModal();
+                };
+            }
+            
+            // 返回顶部按钮
+            if (this.DOM.backToTop) {
+                this.DOM.backToTop.onclick = function(e) {
+                    e.preventDefault();
+                    self.scrollToTop();
+                };
+            }
+            
             // ESC键关闭模态框
-            if (event.key === 'Escape') {
-                if (this.DOM.modal.style.display === 'block') {
-                    this.closeModal();
-                } else if (this.DOM.previewModal.style.display === 'block') {
-                    this.closePreviewModal();
-                }
-            }
-        });
-        
-        // 为添加按钮添加可靠的事件监听器
-        const submitButton = document.querySelector('.submit-button');
-        if (submitButton) {
-            // 移除可能存在的旧监听器
-            submitButton.removeEventListener('click', this.openModal.bind(this));
-            submitButton.removeEventListener('touchstart', this.openModal.bind(this));
-            
-            // 添加新的监听器 - 使用捕获阶段
-            submitButton.addEventListener('click', (event) => {
-                event.stopPropagation();
-                this.openModal();
-            }, true);
-            
-            // 触摸事件
-            submitButton.addEventListener('touchstart', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                this.openModal();
-            }, true);
-        }
-        
-        // 为返回顶部按钮添加可靠的事件监听器
-        if (this.DOM.backToTopButton) {
-            // 移除可能存在的旧监听器
-            this.DOM.backToTopButton.removeEventListener('click', this.scrollToTop.bind(this));
-            this.DOM.backToTopButton.removeEventListener('touchstart', this.scrollToTop.bind(this));
-            
-            // 添加新的监听器 - 使用捕获阶段
-            this.DOM.backToTopButton.addEventListener('click', (event) => {
-                event.stopPropagation();
-                this.scrollToTop();
-            }, true);
-            
-            // 触摸事件
-            this.DOM.backToTopButton.addEventListener('touchstart', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                this.scrollToTop();
-            }, true);
-        }
-    },
-    
-    /**
-     * 打开用于提交新SVG图标的模态框
-     */
-    openModal: function() {
-        this.DOM.modal.setAttribute('aria-hidden', 'false');
-        // 先添加动画类
-        this.DOM.modal.classList.add('show');
-        // 然后显示模态框
-        this.DOM.modal.style.display = 'block';
-        // 聚焦到输入框
-        this.DOM.iconCodeInput.focus();
-    },
-    
-    /**
-     * 关闭模态框
-     */
-    closeModal: function() {
-        // 确保焦点不留在隐藏的元素中
-        const focusedElement = document.activeElement;
-        if (this.DOM.modal.contains(focusedElement)) {
-            // 将焦点移到页面主体
-            document.body.focus();
-        }
-        
-        this.DOM.modal.classList.remove('show');
-        this.DOM.modal.setAttribute('aria-hidden', 'true');
-        // 等待动画完成后隐藏
-        setTimeout(() => {
-            this.DOM.modal.style.display = 'none';
-        }, 300);
-    },
-    
-    /**
-     * 提交前验证表单
-     * @returns {boolean} 表单是否有效
-     */
-    validateForm: function() {
-        const iconCode = this.DOM.iconCodeInput.value.trim();
-        
-        if (!iconCode) {
-            this.showNotification('请输入SVG代码或Base64编码', 'error');
-            return false;
-        }
-        
-        // 检查是否包含多个data URL
-        const dataUrlPattern = /data:image\/svg\+xml;base64,/g;
-        const dataUrlMatches = iconCode.match(dataUrlPattern);
-        
-        if (dataUrlMatches && dataUrlMatches.length > 1) {
-            // 处理多个data URL
-            const svgUrls = iconCode.split(dataUrlPattern);
-            svgUrls.shift(); // 移除第一个空元素
-            
-            for (const base64Code of svgUrls) {
-                const trimmedCode = base64Code.trim();
-                if (trimmedCode) {
-                    // 验证每个base64编码
-                    if (!/^[a-zA-Z0-9+/=]+$/.test(trimmedCode)) {
-                        this.showNotification('无效的Base64编码格式', 'error');
-                        return false;
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (self.DOM.modal && self.DOM.modal.style.display === 'block') {
+                        self.closeModal();
+                    }
+                    if (self.DOM.previewModal && self.DOM.previewModal.style.display === 'block') {
+                        self.closePreviewModal();
                     }
                 }
+            });
+            
+            // 图标卡片点击事件（使用事件委托）
+            if (this.DOM.iconGrid) {
+                this.DOM.iconGrid.onclick = function(e) {
+                    // 首先检查是否点击了删除按钮
+                    const deleteBtn = e.target.closest('.delete-btn');
+                    if (deleteBtn) {
+                        // 找到删除按钮所属的卡片
+                        const card = deleteBtn.closest('.icon-card');
+                        if (card) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            self.confirmDelete(card);
+                            return;
+                        }
+                    }
+                    
+                    // 检查是否点击了图标卡片
+                    const card = e.target.closest('.icon-card');
+                    if (card) {
+                        e.preventDefault();
+                        self.openPreview(card);
+                    }
+                };
             }
-        } 
-        // 检查是否为单个data URL格式
-        else if (iconCode.startsWith('data:image/svg+xml;base64,')) {
-            // 移除数据URL前缀
-            const base64Code = iconCode.replace('data:image/svg+xml;base64,', '');
-            // 验证base64格式
-            if (!/^[a-zA-Z0-9+/=]+$/.test(base64Code)) {
-                this.showNotification('无效的Base64编码格式', 'error');
-                return false;
-            }
-        } 
-        // 检查是否为纯base64编码
-        else if (/^[a-zA-Z0-9+/=]+$/.test(iconCode)) {
-            // 验证base64长度
-            if (iconCode.length % 4 !== 0) {
-                this.showNotification('无效的Base64编码长度', 'error');
-                return false;
-            }
-        } 
-        // 检查是否为纯SVG代码
-        else if (iconCode.includes('<svg')) {
-            if (!iconCode.includes('</svg>')) {
-                this.showNotification('无效的SVG代码，缺少结束标签', 'error');
-                return false;
-            }
-            // 检查是否包含非SVG内容
-            if (iconCode.includes('data:image/svg+xml;base64,')) {
-                this.showNotification('请不要混合输入SVG代码和Base64编码', 'error');
-                return false;
-            }
-        } 
-        // 其他情况视为无效
-        else {
-            this.showNotification('请输入有效的SVG代码或Base64编码', 'error');
-            return false;
-        }
+        },
         
-        return true;
-    },
-    
-    /**
-     * 显示通知消息
-     * @param {string} message 通知消息
-     * @param {string} type 通知类型 (success 或 error)
-     */
-    showNotification: function(message, type) {
-        // 确保DOM元素存在
-        if (!this.DOM.notification) {
-            console.warn('Notification element not found, attempting to reinitialize');
-            // 尝试重新获取DOM元素
-            this.DOM.notification = document.getElementById('notification');
-            if (!this.DOM.notification) {
-                console.error('Notification element still not found, cannot show notification');
+        // 更新删除按钮
+        updateDeleteButtons: function() {
+            const cards = document.querySelectorAll('.icon-card');
+            const self = this;
+            
+            cards.forEach(card => {
+                const existingBtn = card.querySelector('.delete-btn');
+                if (existingBtn) {
+                    existingBtn.remove();
+                }
+                
+                if (this.debugMode) {
+                    const btn = document.createElement('button');
+                    btn.className = 'delete-btn';
+                    btn.innerHTML = '×';
+                    btn.title = '删除此图标';
+                    btn.setAttribute('aria-label', '删除此图标');
+                    
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        self.confirmDelete(card);
+                    });
+                    
+                    card.appendChild(btn);
+                }
+            });
+            
+            console.log('删除按钮已更新');
+        },
+        
+        // 确认删除 - 使用自定义弹窗
+        confirmDelete: function(card) {
+            const self = this;
+            const overlay = document.createElement('div');
+            overlay.className = 'confirm-overlay';
+            
+            const dialog = document.createElement('div');
+            dialog.className = 'confirm-dialog';
+            dialog.innerHTML = 
+                '<div class="confirm-icon">⚠️</div>' +
+                '<div class="confirm-title">确认删除</div>' +
+                '<div class="confirm-message">确定要删除这个图标吗？此操作不可撤销。</div>' +
+                '<div class="confirm-buttons">' +
+                    '<button class="btn btn-secondary" id="confirm-cancel">取消</button>' +
+                    '<button class="btn btn-danger" id="confirm-ok">确认删除</button>' +
+                '</div>';
+            
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+            
+            requestAnimationFrame(() => {
+                overlay.classList.add('show');
+                dialog.classList.add('show');
+            });
+            
+            const close = function() {
+                overlay.classList.remove('show');
+                dialog.classList.remove('show');
+                setTimeout(() => overlay.remove(), 300);
+            };
+            
+            document.getElementById('confirm-cancel').onclick = close;
+            document.getElementById('confirm-ok').onclick = function() {
+                close();
+                self.deleteIcon(card);
+            };
+            
+            overlay.onclick = function(e) {
+                if (e.target === overlay) close();
+            };
+        },
+        
+        // 删除图标
+        deleteIcon: function(card) {
+            const base64 = card.getAttribute('data-base64');
+            const csrfToken = document.getElementById('global-csrf-token').value;
+            
+            if (!base64 || base64.length === 0) {
+                this.showNotification('删除失败: 缺少图标数据', 'error');
                 return;
             }
-        }
-        
-        this.DOM.notification.textContent = message;
-        this.DOM.notification.className = `notification show ${type}`;
-        this.DOM.notification.style.display = 'block';
-        
-        // 3秒后隐藏通知
-        setTimeout(() => {
-            if (this.DOM.notification) {
-                this.DOM.notification.classList.remove('show');
-                setTimeout(() => {
-                    if (this.DOM.notification) {
-                        this.DOM.notification.style.display = 'none';
-                    }
-                }, 300);
+            
+            if (!csrfToken || csrfToken.length === 0) {
+                this.showNotification('删除失败: 请刷新页面重试', 'error');
+                return;
             }
-        }, 3000);
-    },
-    
-    /**
-     * 打开图标预览模态框
-     * @param {HTMLElement} card 图标卡片元素
-     */
-    openPreviewModal: function(card) {
-        // 获取图标数据
-        const svgContent = card.getAttribute('data-svg');
-        const dataUrl = card.getAttribute('data-data-url');
+            
+            // 添加删除动画
+            card.classList.add('deleting');
+            
+            const csrfTokenName = document.getElementById('csrf-token-name').value || 'csrf_token';
+            
+            fetch('api/delete_icon.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                credentials: 'same-origin',
+                body: csrfTokenName + '=' + encodeURIComponent(csrfToken) + '&icon_base64=' + encodeURIComponent(base64)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('HTTP错误: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    this.showNotification('图标删除成功', 'success');
+                    // 等待动画完成后移除
+                    setTimeout(() => card.remove(), 300);
+                } else {
+                    card.classList.remove('deleting');
+                    this.showNotification('删除失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                card.classList.remove('deleting');
+                console.error('删除图标时出错:', error);
+                this.showNotification('删除图标时出错: ' + error.message, 'error');
+            });
+        },
         
-        // 存储当前图标数据
-        this.currentIconData = {
-            svg: svgContent,
-            base64: dataUrl
-        };
+        // 切换主题
+        toggleTheme: function() {
+            const root = document.documentElement;
+            const currentTheme = root.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            this.setTheme(newTheme);
+        },
         
-        // 显示图标
-        this.DOM.iconPreviewContent.innerHTML = svgContent;
+        // 设置主题
+        setTheme: function(theme) {
+            const root = document.documentElement;
+            const sunIcon = document.querySelector('.sun-icon');
+            const moonIcon = document.querySelector('.moon-icon');
+            
+            if (theme === 'dark') {
+                root.setAttribute('data-theme', 'dark');
+                if (sunIcon) sunIcon.style.display = 'none';
+                if (moonIcon) moonIcon.style.display = 'block';
+            } else {
+                root.setAttribute('data-theme', 'light');
+                if (sunIcon) sunIcon.style.display = 'block';
+                if (moonIcon) moonIcon.style.display = 'none';
+            }
+            
+            localStorage.setItem('theme', theme);
+        },
         
         // 打开模态框
-        this.DOM.previewModal.setAttribute('aria-hidden', 'false');
-        // 先添加动画类
-        this.DOM.previewModal.classList.add('show');
-        // 然后显示模态框
-        this.DOM.previewModal.style.display = 'block';
-    },
-    
-    /**
-     * 关闭图标预览模态框
-     */
-    closePreviewModal: function() {
-        // 确保焦点不留在隐藏的元素中
-        const focusedElement = document.activeElement;
-        if (this.DOM.previewModal.contains(focusedElement)) {
-            // 将焦点移到页面主体
-            document.body.focus();
+        openModal: function() {
+            if (this.DOM.modal) {
+                this.DOM.modal.classList.add('show');
+                this.DOM.modal.style.display = 'block';
+            }
+        },
+        
+        // 关闭模态框
+        closeModal: function() {
+            if (this.DOM.modal) {
+                this.DOM.modal.classList.remove('show');
+                this.DOM.modal.style.display = 'none';
+            }
+        },
+        
+        // 打开预览
+        openPreview: function(card) {
+            if (!this.DOM.previewModal) return;
+            
+            const svg = card.getAttribute('data-svg');
+            const base64 = card.getAttribute('data-data-url');
+            
+            // 保存当前图标数据
+            this.currentIcon = { svg: svg, base64: base64 };
+            
+            // 显示图标
+            document.getElementById('icon-preview-content').innerHTML = svg;
+            
+            // 打开模态框
+            this.DOM.previewModal.classList.add('show');
+            this.DOM.previewModal.style.display = 'block';
+        },
+        
+        // 关闭预览
+        closePreviewModal: function() {
+            if (this.DOM.previewModal) {
+                this.DOM.previewModal.classList.remove('show');
+                this.DOM.previewModal.style.display = 'none';
+                this.currentIcon = null;
+            }
+        },
+        
+        // 复制Base64
+        copyBase64: function() {
+            if (this.currentIcon && navigator.clipboard) {
+                navigator.clipboard.writeText(this.currentIcon.base64).then(() => {
+                    this.showNotification('Base64编码已复制', 'success');
+                });
+            }
+        },
+        
+        // 复制SVG
+        copySvg: function() {
+            if (this.currentIcon && navigator.clipboard) {
+                navigator.clipboard.writeText(this.currentIcon.svg).then(() => {
+                    this.showNotification('SVG代码已复制', 'success');
+                });
+            }
+        },
+        
+        // 滚动到顶部
+        scrollToTop: function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        
+        // 显示通知
+        showNotification: function(message, type) {
+            const notification = this.DOM.notification;
+            if (!notification) return;
+            
+            notification.textContent = message;
+            notification.className = 'notification show ' + type;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 300);
+            }, 3000);
         }
-        
-        this.DOM.previewModal.classList.remove('show');
-        this.DOM.previewModal.setAttribute('aria-hidden', 'true');
-        // 等待动画完成后隐藏
-        setTimeout(() => {
-            this.DOM.previewModal.style.display = 'none';
-            // 清除当前图标数据
-            this.currentIconData = null;
-        }, 300);
-    },
+    };
     
-    /**
-     * 复制Base64编码到剪贴板
-     */
-    copyBase64: function() {
-        if (this.currentIconData) {
-            navigator.clipboard.writeText(this.currentIconData.base64).then(() => {
-                this.showNotification('Base64编码已复制到剪贴板！', 'success');
-            }).catch(err => {
-                console.error('复制失败:', err);
-                this.showNotification('复制失败', 'error');
-            });
-        }
-    },
-    
-    /**
-     * 复制SVG代码到剪贴板
-     */
-    copySvg: function() {
-        if (this.currentIconData) {
-            navigator.clipboard.writeText(this.currentIconData.svg).then(() => {
-                this.showNotification('SVG代码已复制到剪贴板！', 'success');
-            }).catch(err => {
-                console.error('复制失败:', err);
-                this.showNotification('复制失败', 'error');
-            });
-        }
-    },
-    
-    /**
-     * 初始化图标点击事件
-     */
-    initIconClickEvents: function() {
-        // 确保DOM元素存在
-        if (!this.DOM.iconGrid) {
-            console.warn('Icon grid not found');
-            // 尝试重新获取
-            this.DOM.iconGrid = document.getElementById('icon-grid');
-            if (!this.DOM.iconGrid) {
-                return;
-            }
-        }
-        
-        // 触摸事件变量
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let touchEndX = 0;
-        let touchEndY = 0;
-        
-        // 使用事件委托处理点击事件 - 使用捕获阶段
-        this.DOM.iconGrid.addEventListener('click', (event) => {
-            const card = event.target.closest('.icon-card');
-            if (card) {
-                event.stopPropagation();
-                this.openPreviewModal(card);
-            }
-        }, true);
-        
-        // 触摸开始事件
-        this.DOM.iconGrid.addEventListener('touchstart', (event) => {
-            const card = event.target.closest('.icon-card');
-            if (card) {
-                // 记录触摸开始位置
-                touchStartX = event.touches[0].clientX;
-                touchStartY = event.touches[0].clientY;
-            }
-        }, true);
-        
-        // 触摸结束事件
-        this.DOM.iconGrid.addEventListener('touchend', (event) => {
-            const card = event.target.closest('.icon-card');
-            if (card) {
-                // 记录触摸结束位置
-                touchEndX = event.changedTouches[0].clientX;
-                touchEndY = event.changedTouches[0].clientY;
-                
-                // 计算触摸距离
-                const deltaX = Math.abs(touchEndX - touchStartX);
-                const deltaY = Math.abs(touchEndY - touchStartY);
-                
-                // 如果移动距离小于10px，视为点击
-                if (deltaX < 10 && deltaY < 10) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    this.openPreviewModal(card);
-                }
-            }
-        }, true);
-        
-        // 键盘事件（Enter或Space键）
-        this.DOM.iconGrid.addEventListener('keydown', (event) => {
-            if ((event.key === 'Enter' || event.key === ' ') && event.target.classList.contains('icon-card')) {
-                event.preventDefault();
-                event.stopPropagation();
-                this.openPreviewModal(event.target);
-            }
+    // 页面加载完成后初始化
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            SVG.init();
         });
-    },
-    
-    /**
-     * 初始化返回顶部按钮
-     */
-    initBackToTop: function() {
-        // 滚动事件监听器
-        window.addEventListener('scroll', () => {
-            if (window.pageYOffset > 300) {
-                this.DOM.backToTopButton.classList.add('show');
-            } else {
-                this.DOM.backToTopButton.classList.remove('show');
-            }
-        });
-        
-        // 窗口大小变化时重新检查
-        window.addEventListener('resize', () => {
-            if (window.pageYOffset > 300) {
-                this.DOM.backToTopButton.classList.add('show');
-            } else {
-                this.DOM.backToTopButton.classList.remove('show');
-            }
-        });
-    },
-    
-    /**
-     * 平滑滚动到页面顶部
-     */
-    scrollToTop: function() {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    }
-};
-
-// 初始化 - 使用更可靠的方式，避免Cloudflare干扰
-(function() {
-    // 等待DOM加载完成
-    function initWhenReady() {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                SvgIconLibrary.init();
-            });
-        } else {
-            SvgIconLibrary.init();
-        }
+    } else {
+        SVG.init();
     }
     
-    // 立即执行初始化
-    initWhenReady();
+    // 暴露到全局作用域
+    window.SVG = SVG;
     
-    // 额外的保险措施：延迟初始化，确保所有资源都已加载
-    setTimeout(function() {
-        if (!window.SvgIconLibrary || !window.SvgIconLibrary.DOM || Object.keys(window.SvgIconLibrary.DOM).length === 0) {
-            console.log('Secondary initialization attempt');
-            SvgIconLibrary.init();
-        }
-    }, 1000);
+    // 暴露全局函数
+    window.openModal = function() { SVG.openModal(); };
+    window.closeModal = function() { SVG.closeModal(); };
+    window.closePreviewModal = function() { SVG.closePreviewModal(); };
+    window.copyBase64 = function() { SVG.copyBase64(); };
+    window.copySvg = function() { SVG.copySvg(); };
+    window.scrollToTop = function() { SVG.scrollToTop(); };
+    
 })();
-
-// 全局函数，供HTML调用 - 使用更直接的方式
-window.openModal = function() {
-    SvgIconLibrary.openModal();
-};
-
-window.closeModal = function() {
-    SvgIconLibrary.closeModal();
-};
-
-window.validateForm = function() {
-    return SvgIconLibrary.validateForm();
-};
-
-window.openPreviewModal = function(card) {
-    SvgIconLibrary.openPreviewModal(card);
-};
-
-window.closePreviewModal = function() {
-    SvgIconLibrary.closePreviewModal();
-};
-
-window.copyBase64 = function() {
-    SvgIconLibrary.copyBase64();
-};
-
-window.copySvg = function() {
-    SvgIconLibrary.copySvg();
-};
-
-window.scrollToTop = function() {
-    SvgIconLibrary.scrollToTop();
-};
-

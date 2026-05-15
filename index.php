@@ -10,6 +10,7 @@
  * - 支持提交新的SVG图标
  * - 响应式设计，适配不同设备
  * - 现代化的液态玻璃UI效果
+ * - Debug模式支持删除图标
  */
 
 // 引入配置文件
@@ -196,6 +197,28 @@ $icons = readSvgIcons();
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
+    <!-- 全局CSRF令牌 - 用于所有AJAX请求 -->
+    <input type="hidden" name="csrf_token" id="global-csrf-token" value="<?php echo generateCsrfToken(); ?>">
+    <input type="hidden" id="csrf-token-name" value="<?php echo CSRF_TOKEN_NAME; ?>">
+    
+    <!-- 主题切换按钮 -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="切换主题" title="切换明暗主题">
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </button>
+    
+    <!-- Debug模式按钮 - 仅在debug模式下显示 -->
+    <?php if (isset($_GET['debug'])): ?>
+        <button class="debug-toggle active" id="debug-toggle" aria-label="退出Debug模式" title="点击退出Debug模式">
+            DEBUG
+        </button>
+    <?php endif; ?>
+    
     <div class="container">
         <!-- 头部区域 -->
         <header>
@@ -266,20 +289,26 @@ $icons = readSvgIcons();
     
     <!-- 引入JavaScript -->
     <script src="assets/js/script.js"></script>
-    <!-- 显示提交消息 -->
     <script>
+    // 表单验证
+    function validateForm() {
+        const code = document.getElementById('icon-code').value.trim();
+        if (!code) {
+            SVG.showNotification('请输入SVG代码或Base64编码', 'error');
+            return false;
+        }
+        return true;
+    }
+    
     <?php if (isset($message) && !empty($message)): ?>
-        // 确保SvgIconLibrary初始化完成后再显示通知
         function showNotificationWhenReady() {
-            if (typeof SvgIconLibrary !== 'undefined' && SvgIconLibrary.DOM) {
-                SvgIconLibrary.showNotification('<?php echo $message; ?>', '<?php echo strpos($message, '成功') !== false ? 'success' : 'error'; ?>');
+            if (typeof SVG !== 'undefined' && SVG.DOM) {
+                SVG.showNotification('<?php echo $message; ?>', '<?php echo strpos($message, '成功') !== false ? 'success' : 'error'; ?>');
             } else {
-                // 延迟重试
                 setTimeout(showNotificationWhenReady, 100);
             }
         }
         
-        // 等待DOM加载完成
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', showNotificationWhenReady);
         } else {

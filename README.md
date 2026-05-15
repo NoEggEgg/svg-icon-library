@@ -19,31 +19,37 @@ SVG图标库是一个专为前端开发者设计的工具，旨在简化SVG图�
 - ✅ 支持多种输入格式（SVG代码、纯Base64编码、带data URL前缀的Base64编码）
 - ✅ 完善的表单验证和错误处理
 - ✅ CSRF防护确保安全
+- ✅ **支持明暗主题切换**
+- ✅ **Debug模式支持图标删除**
+- ✅ **最新添加的图标显示在最前面**
+- ✅ **移动端触摸滑动保护**
 
 ## 技术栈
 
 - **前端**：HTML5, CSS3, JavaScript (ES6+)
 - **后端**：PHP 8.0+
 - **存储**：文本文件（icons.txt）
-- **设计风格**：液态玻璃效果
+- **设计风格**：液态玻璃效果 (Glassmorphism)
 - **字体**：Google Fonts (Inter, Poppins)
 
 ## 项目结构
 
 ```
 SVG/
+├── api/
+│   └── delete_icon.php      # 删除图标API
 ├── assets/
 │   ├── css/
-│   │   └── style.css       # 样式文件
+│   │   └── style.css        # 样式文件
 │   └── js/
-│       └── script.js       # JavaScript文件
+│       └── script.js        # JavaScript文件
 ├── includes/
-│   ├── config.php          # 配置文件
-│   ├── security.php        # 安全相关功能
-│   └── svg_manager.php     # SVG图标管理功能
-├── icons.txt              # 存储SVG图标
-├── index.php              # 主页面
-└── README.md              # 项目说明文档
+│   ├── config.php           # 配置文件
+│   ├── security.php         # 安全相关功能
+│   └── svg_manager.php      # SVG图标管理功能
+├── icons.txt               # 存储SVG图标
+├── index.php               # 主页面
+└── README.md               # 项目说明文档
 ```
 
 ## 安装步骤
@@ -61,8 +67,14 @@ SVG/
    - 将项目文件放置在Web服务器根目录
    - 确保 `icons.txt`文件具有写入权限
 
-3. **访问系统**
-   在浏览器中访问：`http://localhost/svg-icon-library/`
+3. **启动开发服务器**
+
+   ```bash
+   php -S localhost:8000
+   ```
+
+4. **访问系统**
+   在浏览器中访问：`http://localhost:8000/`
 
 ## 使用方法
 
@@ -90,12 +102,26 @@ SVG/
 2. 系统会自动处理每个图标并分别验证
 3. 提交后会显示成功、重复和失败的图标数量
 
+### 切换主题
+
+1. 点击右上角的太阳/月亮图标
+2. 系统会在亮色和暗色主题之间切换
+3. 主题偏好会自动保存到本地存储
+
+### 删除图标（Debug模式）
+
+1. 在URL末尾添加参数：`http://localhost:8000/?debug`
+2. 进入Debug模式后，每个图标卡片会显示红色删除按钮
+3. 点击删除按钮会显示确认弹窗
+4. 确认后图标将被删除
+
 ## 安全特性
 
 - **CSRF防护**：使用令牌验证表单提交
 - **SVG验证**：检查SVG内容的安全性
 - **输入验证**：验证用户输入的有效性
 - **文件操作安全**：使用文件锁定确保数据一致性
+- **删除权限**：删除功能仅在Debug模式下可用
 
 ## 浏览器兼容性
 
@@ -116,6 +142,7 @@ SVG/
 在 `includes/config.php`文件中可以修改以下配置：
 
 - `ICON_FILE`：SVG图标存储文件路径
+- `CSRF_TOKEN_NAME`：CSRF令牌参数名称
 
 ## 贡献指南
 
