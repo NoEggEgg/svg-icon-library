@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 /**
  * 删除SVG图标API
  * 通过POST请求删除指定的图标
@@ -7,8 +9,6 @@
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/security.php';
 require_once __DIR__ . '/../includes/svg_manager.php';
-
-session_start();
 
 header('Content-Type: application/json; charset=utf-8');
 
