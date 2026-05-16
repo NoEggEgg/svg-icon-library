@@ -260,7 +260,7 @@
             
             const csrfTokenName = document.getElementById('csrf-token-name').value || 'csrf_token';
             
-            fetch('api/delete_icon.php', {
+            fetch('api/delete_icon.php?debug', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
